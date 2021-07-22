@@ -2,73 +2,112 @@
   <div class="auth-page">
     <div class="container page">
       <div class="row">
-
         <div class="col-md-6 offset-md-3 col-xs-12">
-          <h1 class="text-xs-center">{{isLogin ? 'Sign in' : 'Sign up'}}</h1>
+          <h1 class="text-xs-center">{{ isLogin ? "Sign in" : "Sign up" }}</h1>
           <p class="text-xs-center">
-            <nuxt-link v-if="isLogin" to="/register">Need an account?</nuxt-link>
+            <nuxt-link v-if="isLogin" to="/register"
+              >Need an account?</nuxt-link
+            >
             <nuxt-link v-else to="/login">Have an account?</nuxt-link>
           </p>
 
           <ul class="error-messages">
-            <li>That email is already taken</li>
+            <template v-for="(msg, field) in errors">
+              <li v-for="(m, index) in msg" :key="index">
+                {{ field }} {{ m }}
+              </li>
+            </template>
           </ul>
 
           <form @submit.prevent="onSubmit">
             <fieldset class="form-group" v-if="!isLogin">
-              <input class="form-control form-control-lg" type="text" placeholder="Your Name">
+              <input
+                class="form-control form-control-lg"
+                type="text"
+                placeholder="Your Name"
+                v-model="user.username"
+                required
+              />
             </fieldset>
             <fieldset class="form-group">
-              <input class="form-control form-control-lg" type="text" placeholder="Email" v-model="user.email">
+              <input
+                class="form-control form-control-lg"
+                type="email"
+                placeholder="Email"
+                v-model="user.email"
+                required
+              />
             </fieldset>
             <fieldset class="form-group">
-              <input class="form-control form-control-lg" type="password" placeholder="Password" v-model="user.password">
+              <input
+                class="form-control form-control-lg"
+                type="password"
+                placeholder="Password"
+                v-model="user.password"
+                required
+                minlength="8"
+              />
             </fieldset>
             <button class="btn btn-lg btn-primary pull-xs-right">
-              {{isLogin ? 'Sign in' : 'Sign up'}}
+              {{ isLogin ? "Sign in" : "Sign up" }}
             </button>
           </form>
         </div>
-
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import request from '@/utils/request'
+import { login, register } from "@/api/user";
 export default {
-  name: 'LoginIndex',
+  name: "LoginIndex",
   data() {
     return {
       user: {
-        email: '',
-        password: ''
-      }
-    }
+        email: "",
+        password: "",
+      },
+      errors: {}, //错误日志
+    };
   },
   computed: {
     isLogin() {
-      return this.$route.name === 'login'
-    }
+      return this.$route.name === "login";
+    },
   },
   methods: {
     async onSubmit() {
-      // 提交表单 请求登录
-      const {data} = await request({
-        method: 'POST', 
-        url: '/api/users/login',
-        data: {
-          user: this.user
-        }
-      })
-      // console.log(data)
-      this.$router.push('/')
-    }
-  }
-}
+      const p = this.isLogin
+        ? login({
+            user: this.user,
+          })
+        : register({
+            user: this.user,
+          });
+
+      p.then(({ data }) => {
+        //保存用户登陆状态
+        this.$store.commit("setUser", data.user);
+        this.$router.push("/");
+      }).catch((err) => {
+        this.errors = err.response.data.errors;
+      });
+
+      // try {
+      //   // 提交表单 请求登录
+      //   const { data } = await login({
+      //     user: this.user,
+      //   });
+      //   // console.log(data)
+      //   this.$router.push("/");
+      // } catch (err) {
+      //   this.errors = err.response.data.errors;
+      // }
+    },
+  },
+};
 </script>
 
 <style>
-
 </style>
