@@ -9,6 +9,7 @@
             <!-- Add "active" class when you're on that page" -->
             <nuxt-link class="nav-link" to="/" exact>Home</nuxt-link>
           </li>
+          <template v-if="user">
           <li class="nav-item">
             <nuxt-link class="nav-link" to="/editor">
               <i class="ion-compose"></i>&nbsp;New Post
@@ -20,17 +21,20 @@
             </nuxt-link>
           </li>
           <li class="nav-item">
+            <nuxt-link class="nav-link" to="/profile/@orange_z">
+              <img v-if="user.image" class="user-pic" :src="user.image">
+              {{user.username}}
+            </nuxt-link>
+          </li>
+          </template>
+          <template v-else>
+          <li class="nav-item">
             <nuxt-link class="nav-link" to="/login">Sign in</nuxt-link>
           </li>
           <li class="nav-item">
             <nuxt-link class="nav-link" to="/register">Sign up</nuxt-link>
-          </li>
-          <li class="nav-item">
-            <nuxt-link class="nav-link" to="/profile/@orange_z">
-              <img class="user-pic" src="https://github.githubassets.com/images/icons/emoji/unicode/1f389.png">
-              orange_z
-            </nuxt-link>
-          </li>
+          </li>  
+          </template>       
         </ul>
       </div>
     </nav>
@@ -49,8 +53,12 @@
 </template>
 
 <script>
+import {mapState} from 'vuex'
 export default {
-
+  name: 'Layout',
+  computed: {
+    ...mapState(['user'])
+  }
 }
 </script>
 

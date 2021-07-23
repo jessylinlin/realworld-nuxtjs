@@ -10,70 +10,132 @@
 
   <div class="container page">
     <div class="row">
-
+      <!-- tab -->
       <div class="col-md-9">
         <div class="feed-toggle">
           <ul class="nav nav-pills outline-active">
-            <li class="nav-item">
-              <a class="nav-link disabled" href="">Your Feed</a>
+            <li class="nav-item" v-if="user">
+              <nuxt-link class="nav-link" exact
+              :class="{
+                active: !tag && tab === 'your_feed'
+              }"
+              :to="{
+                name:'home',
+                query: {
+                  tab: 'your_feed'
+                }
+              }"
+            >Your Feed</nuxt-link>
             </li>
             <li class="nav-item">
-              <a class="nav-link active" href="">Global Feed</a>
+              <nuxt-link class="nav-link" exact
+              :class="{
+                active: !tag && tab === 'global_feed'
+              }"
+              :to="{
+                name: 'home',
+                query: {
+                  tab: 'global_feed'
+                }
+              }" 
+            >Global Feed</nuxt-link>
+            </li>
+            <li class="nav-item" v-if="tag">
+              <nuxt-link class="nav-link" exact
+              :class="{
+                active: tag
+              }"
+              :to="{
+                name: 'home',
+                query: {
+                  tag: tag
+                }
+              }"
+            >#{{tag}}</nuxt-link>
             </li>
           </ul>
         </div>
 
-        <div class="article-preview">
+        <div class="article-preview" v-for="article in articles" :key="article.slug">
           <div class="article-meta">
-            <a href="profile.html"><img src="http://i.imgur.com/Qr71crq.jpg" /></a>
+            <nuxt-link :to="{
+                name: 'profile',
+                params: {
+                  username: article.author.username
+                }
+             }"><img :src="article.author.image" /></nuxt-link>
             <div class="info">
-              <a href="" class="author">Eric Simons</a>
-              <span class="date">January 20th</span>
+              <nuxt-link class="author" :to="{
+                name: 'profile',
+                params: {
+                  username: article.author.username
+                }
+             }">
+             {{article.author.username}}
+              </nuxt-link>
+              <span class="date">{{article.createdAt}}</span>
             </div>
-            <button class="btn btn-outline-primary btn-sm pull-xs-right">
-              <i class="ion-heart"></i> 29
+            <button class="btn btn-outline-primary btn-sm pull-xs-right"
+            :class="{
+              active: articles.favorited
+            }"
+            >
+              <i class="ion-heart"></i> {{article.favoritesCount}}
             </button>
           </div>
-          <a href="" class="preview-link">
-            <h1>How to build webapps that scale</h1>
-            <p>This is the description for the post.</p>
+          <nuxt-link :to="{
+            name: 'article',
+            params: {
+              slug: article.slug
+            }
+          }" class="preview-link"
+          >
+            <h1>{{article.title}}</h1>
+            <p>{{article.description}}</p>
             <span>Read more...</span>
-          </a>
+          </nuxt-link>
         </div>
+        <div class="article-preview" v-if="!articles || articles.length === 0">No articles are here... yet.</div>
+        <!-- 翻页处理 -->
+        <nav>
+          <ul class="pagination">
+            <li 
+            class="page-item ng-scope" 
+            :class="{
+              active: page === item
+            }"
+            v-for="item in totalPage"
+            :key="item"
+            >
+              <nuxt-link class="page-link ng-binding" :to="{
+                name: 'home',
+                query: {
+                  page: item,
+                  tag: $route.query.tag
+                }
+              }">{{item}}</nuxt-link>
+            </li>  
 
-        <div class="article-preview">
-          <div class="article-meta">
-            <a href="profile.html"><img src="http://i.imgur.com/N4VcUeJ.jpg" /></a>
-            <div class="info">
-              <a href="" class="author">Albert Pai</a>
-              <span class="date">January 20th</span>
-            </div>
-            <button class="btn btn-outline-primary btn-sm pull-xs-right">
-              <i class="ion-heart"></i> 32
-            </button>
-          </div>
-          <a href="" class="preview-link">
-            <h1>The song you won't ever stop singing. No matter how hard you try.</h1>
-            <p>This is the description for the post.</p>
-            <span>Read more...</span>
-          </a>
-        </div>
-
+          </ul>
+        </nav>
       </div>
 
+      <!-- 标签列表 -->
       <div class="col-md-3">
         <div class="sidebar">
           <p>Popular Tags</p>
 
           <div class="tag-list">
-            <a href="" class="tag-pill tag-default">programming</a>
-            <a href="" class="tag-pill tag-default">javascript</a>
-            <a href="" class="tag-pill tag-default">emberjs</a>
-            <a href="" class="tag-pill tag-default">angularjs</a>
-            <a href="" class="tag-pill tag-default">react</a>
-            <a href="" class="tag-pill tag-default">mean</a>
-            <a href="" class="tag-pill tag-default">node</a>
-            <a href="" class="tag-pill tag-default">rails</a>
+            <nuxt-link :to="{
+              name: 'home',
+              query: {
+                tag: item
+              }
+            }" 
+            class="tag-pill tag-default"
+            v-for="item in tags"
+            :key="item"
+            >{{item}}</nuxt-link>            
           </div>
         </div>
       </div>
@@ -82,13 +144,60 @@
   </div>
 
 </div>
-
-
 </template>
 
 <script>
+import {getArticles, getFeedArticles} from '@/api/article'
+import { getTags } from '@/api/tag'
+import { mapState } from 'vuex'
 export default {
-  name: 'HomeIndex'
+  name: 'HomeIndex',
+  watchQuery: ['page', 'tag', 'tab'],
+  data() {
+    return {
+      
+    }
+  },
+  computed:{
+    totalPage() {
+      return Math.ceil(this.articlesCount / this.limit)
+    },
+    ...mapState(['user'])
+  },
+  //服務器端+客戶端
+  async asyncData({query, store}) {
+    // console.log(store)
+    const page = Number.parseInt(query.page || 1)
+    const limit = 10
+    const tag = query.tag 
+    const tab = query.tab  
+    const loadArticles = store.state.user && tab === 'your_feed'
+      ? getFeedArticles
+      : getArticles
+
+    const [articleRes, tagRes] = await Promise.all([
+      loadArticles({
+        limit: limit,
+        offset: (page - 1) * limit,
+        tag
+      }),
+      getTags()
+    ])
+
+    const {articles, articlesCount} = articleRes.data
+    const { tags } = tagRes.data
+
+    return {
+      articles: articles,
+      articlesCount: articlesCount,
+      limit,
+      page,
+      tags, //标签列表
+      tag,
+      tab: tab || "global_feed"
+    }
+    // console.log(data)
+  }
 }
 </script>
 

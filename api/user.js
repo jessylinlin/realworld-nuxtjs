@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import { request } from '@/plugins/request'
 
 //用户登陆
 export const login = data => {
@@ -8,6 +8,7 @@ export const login = data => {
         data
     })
 }
+
 //注册
 export const register = data => {
     return request({
