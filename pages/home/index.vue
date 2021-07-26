@@ -1,4 +1,4 @@
-<template>
+      <template>
 <div class="home-page">
 
   <div class="banner">
@@ -73,12 +73,14 @@
              }">
              {{article.author.username}}
               </nuxt-link>
-              <span class="date">{{article.createdAt}}</span>
+              <span class="date">{{article.createdAt | date('MMM DD, YYYY')}}</span>
             </div>
             <button class="btn btn-outline-primary btn-sm pull-xs-right"
             :class="{
-              active: articles.favorited
+              active: article.favorited
             }"
+            @click="onFavorite(article)"
+            :disabled="article.favoriteDisabled"
             >
               <i class="ion-heart"></i> {{article.favoritesCount}}
             </button>
@@ -147,7 +149,7 @@
 </template>
 
 <script>
-import {getArticles, getFeedArticles} from '@/api/article'
+import {getArticles, getFeedArticles, addFavorite, deleteFavorite} from '@/api/article'
 import { getTags } from '@/api/tag'
 import { mapState } from 'vuex'
 export default {
@@ -164,6 +166,21 @@ export default {
     },
     ...mapState(['user'])
   },
+  methods: {
+    async onFavorite(article) {
+      article.favoriteDisabled = true
+      if (article.favorited) {
+        await deleteFavorite(article.slug)
+        article.favorited = false
+        article.favoritesCount -= 1
+      } else {
+        await addFavorite(article.slug)
+        article.favorited = true
+        article.favoritesCount += 1
+      }
+      article.favoriteDisabled = false
+    }
+  },
   //服務器端+客戶端
   async asyncData({query, store}) {
     // console.log(store)
@@ -176,7 +193,7 @@ export default {
       : getArticles
 
     const [articleRes, tagRes] = await Promise.all([
-      loadArticles({
+     loadArticles ({
         limit: limit,
         offset: (page - 1) * limit,
         tag
