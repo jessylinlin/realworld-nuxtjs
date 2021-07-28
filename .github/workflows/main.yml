@@ -53,7 +53,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /root/realworld-nuxtjs
-            wget https://github.com/jessylinlin/realworld-nuxtjs/releases/latest/download/release.tgz -O release.tgz
+            wget  --no-check-certificate https://github.com/jessylinlin/realworld-nuxtjs/releases/latest/download/release.tgz -O release.tgz
             tar zxvf release.tgz
             yarn --production
             pm2 reload pm2.config.json
